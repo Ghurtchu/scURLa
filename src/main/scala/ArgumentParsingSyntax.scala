@@ -5,7 +5,7 @@ object ArgumentParsingSyntax {
   implicit class StringToHttpMethodConverter(arg: String) {
     def toHttpMethod: Option[HttpMethod] = arg match {
       case "get" => Some(GET)
-      case _ => None
+      case "post" => Some(POST)
     }
   }
 

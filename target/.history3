@@ -22,3 +22,13 @@
 1651055846669:run GET https://facebook.com
 1651055853102:run GET http://odnoklassniki.ru
 1651056597343:run GET htyla
+1651060624658:run http://facebook.com <h> json <d> '{"user": "nika"}'
+1651060636664:run http://facebook.com <h> json <d> "{"user": "nika"}"
+1651060647056:run http://facebook.com <h> json <d> "{'user': 'nika'}"
+1651060691802:run GET http://facebook.com <h> json <d> "{'user': 'nika'}"
+1651060700131:run POST http://facebook.com <h> json <d> "{'user': 'nika'}"
+1651061545175:run POST http://facebook.com <h> json <d> "{'name': 'nika', 'job': 'leader'}"
+1651061575304:run POST https://j17lt.csb.app/api/user <h> json <d> "{'name': 'nika', 'job': 'leader'}"
+1651061586521:run POST https://j17lt.csb.app/api/userS <h> json <d> "{'name': 'nika', 'job': 'leader'}"
+1651061590625:run POST https://j17lt.csb.app/api/users <h> json <d> "{'name': 'nika', 'job': 'leader'}"
+1651061612905:run POST https://reqres.in/api/users <h> json <d> "{'name': 'nika', 'job': 'leader'}"
