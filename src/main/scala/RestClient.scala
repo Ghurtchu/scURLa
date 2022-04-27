@@ -1,4 +1,3 @@
-import sttp.client3._
 import sttp.client3.{HttpURLConnectionBackend, Identity, SttpBackend, UriContext, basicRequest}
 import ArgumentParsingSyntax._
 import RegexMatcherInstances._
@@ -39,8 +38,4 @@ object RestClient {
 
   }
 }
-
-sealed trait HttpMethod
-case object GET extends HttpMethod
-case object POST extends HttpMethod
 

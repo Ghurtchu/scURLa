@@ -4,13 +4,13 @@ object ArgumentParsingSyntax {
 
   implicit class StringToHttpMethodConverter(arg: String) {
     def toHttpMethod: Option[HttpMethod] = arg match {
-      case "get" | "GET" => Some(GET)
+      case "get" => Some(GET)
       case _ => None
     }
   }
 
   implicit class HttpMethodExtractor(args: Array[String]) {
-    def extractHttpMethod: Option[HttpMethod] = args(0).toHttpMethod
+    def extractHttpMethod: Option[HttpMethod] = args(0).toLowerCase.toHttpMethod
   }
 
   implicit class UriExtractor(args: Array[String]) {
