@@ -3,10 +3,13 @@ import ArgumentParsingSyntax._
 import RegexMatcherInstances._
 import ContainsSyntax._
 import ContainsVerifierInstances._
+import TypeAliases._
+
 
 object RestClient {
 
   private val backend: SttpBackend[Identity, Any] = HttpURLConnectionBackend()
+
 
   // GENERAL EXAMPLE while being inside of sbt
 
@@ -44,7 +47,7 @@ object RestClient {
 
         if (hasHeader && hasData) {
 
-          val maybeHeaderAndBody: (Option[RequestParameter], Option[RequestParameter]) = (args extractRequestParam "<h>", args extractRequestParam "<d>")
+          val maybeHeaderAndBody: MaybeRequestParamTuple = (args extractRequestParam "<h>", args extractRequestParam "<d>")
 
           maybeHeaderAndBody match {
 
