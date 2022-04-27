@@ -1,19 +1,23 @@
-import HttpRegexInstances.httpRegexPattern
+package parser
 
-object ArgumentParsingSyntax {
+import entity.regex.HttpRegex
+import entity.{GET, HttpMethod, POST}
+import entity.regex.HttpRegexInstances._
+import entity.regex.util.Matcher
 
-  implicit class StringToHttpMethodConverter(arg: String) {
+object ArgumentParserSyntax {
+
+  implicit class StringParserOps(arg: String) {
     def toHttpMethod: Option[HttpMethod] = arg match {
       case "get" => Some(GET)
       case "post" => Some(POST)
+      case _ => None
     }
   }
 
-  implicit class HttpMethodExtractor(args: Array[String]) {
+  implicit class StringArrayParserOps(args: Array[String]) {
     def extractHttpMethod: Option[HttpMethod] = args(0).toLowerCase.toHttpMethod
-  }
 
-  implicit class UriExtractor(args: Array[String]) {
     def extractUri(implicit matcher: Matcher[HttpRegex]): Either[String, String] = {
       val uri = args(1)
 

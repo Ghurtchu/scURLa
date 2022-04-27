@@ -1,9 +1,10 @@
 import sttp.client3.{HttpURLConnectionBackend, Identity, SttpBackend, UriContext, basicRequest}
-import ArgumentParsingSyntax._
-import RegexMatcherInstances._
-import ContainsSyntax._
-import ContainsVerifierInstances._
+import parser.ArgumentParserSyntax._
+import entity.regex.util.RegexMatcherInstances._
+import parser.validator.ContainerValidatorSyntax._
+import parser.validator.StringArrayValidatorInstances._
 import TypeAliases._
+import entity.{GET, HttpMethod, POST}
 
 
 object RestClient {
@@ -13,13 +14,13 @@ object RestClient {
 
   // GENERAL EXAMPLE while being inside of sbt
 
-  // GET
-  // run GET https://api.publicapis.org/entries
+  // entity.GET
+  // run entity.GET https://api.publicapis.org/entries
 
-  // POST
+  // entity.POST
   // <h> = header
   // <d> = data
-  // run POST https://reqres.in/api/users <h> "json" <d> '{"username": "nika"}'
+  // run entity.POST https://reqres.in/api/users <h> "json" <d> '{"username": "nika"}'
 
   val EMPTY_STRING = ""
 
@@ -82,8 +83,6 @@ object RestClient {
     }
 
   }
-
-  private def extractElement(args: Array[String], index: Int): Option[String] = if (args.length < index + 1) None else Some(args(index + 1))
 
 }
 

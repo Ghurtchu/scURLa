@@ -1,3 +1,5 @@
+package entity.regex
+
 import scala.util.matching.Regex
 
 case class HttpRegex()(implicit regex: Regex) {

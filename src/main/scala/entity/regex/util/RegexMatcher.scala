@@ -1,3 +1,7 @@
+package entity.regex.util
+
+import entity.regex.HttpRegex
+
 trait Matcher[A] {
   def matches(value: String)(implicit pattern: A): Boolean
 }
