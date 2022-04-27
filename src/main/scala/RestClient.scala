@@ -1,6 +1,8 @@
 import sttp.client3.{HttpURLConnectionBackend, Identity, SttpBackend, UriContext, basicRequest}
 import ArgumentParsingSyntax._
 import RegexMatcherInstances._
+import ContainsSyntax._
+import ContainsVerifierInstances._
 
 object RestClient {
 
@@ -22,8 +24,6 @@ object RestClient {
 
     require(args.length >= 1, "You need at least to provide a URL")
 
-    val commandLength: Int = args.length
-
     val httpMethod: HttpMethod = args.extractHttpMethod.fold[HttpMethod](GET)(identity)
 
     val uri: String = args.extractUri match {
@@ -39,29 +39,25 @@ object RestClient {
         println(response.body)
       }
       case POST => {
-        val hasHeader = args contains "<h>"
-        val hasData = args contains "<d>"
+        val hasHeader = args hasRequestParam "<h>"
+        val hasData = args hasRequestParam "<d>"
 
         if (hasHeader && hasData) {
 
-          val headerIndex = args.indexOf("<h>")
-          val bodyIndex = args.indexOf("<d>")
+          val maybeHeaderAndBody: (Option[RequestParameter], Option[RequestParameter]) = (args extractRequestParam "<h>", args extractRequestParam "<d>")
 
-          val header = extractElement(args, headerIndex)
-          val body = extractElement(args, bodyIndex)
+          maybeHeaderAndBody match {
 
-          (header, body) match {
-
-            case (Some(h), Some(b)) => {
-              val response = basicRequest.body(b).post(uri"$uri").send(backend)
+            case (Some(header), Some(data)) => {
+              val response = basicRequest.body(data.get).post(uri"$uri").send(backend)
               println(response)
             }
 
-            case (Some(h), None) => {
+            case (Some(header), None) => {
 
             }
 
-            case (None, Some(b)) => {
+            case (None, Some(data)) => {
 
             }
 
