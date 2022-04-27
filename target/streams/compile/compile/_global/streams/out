@@ -1,6 +1,0 @@
-[0m[[0m[31merror[0m] [0m[0m/home/anzor.gurchumelia/Desktop/RestClient/src/main/scala/RestClient.scala:20:72: type mismatch;[0m
-[0m[[0m[31merror[0m] [0m[0m found   : m.type (with underlying type HttpMethod)[0m
-[0m[[0m[31merror[0m] [0m[0m required: GET.type[0m
-[0m[[0m[31merror[0m] [0m[0m    val httpMethod: HttpMethod = args.extractHttpMethod.fold(GET)(m => m)[0m
-[0m[[0m[31merror[0m] [0m[0m                                                                       ^[0m
-[0m[[0m[31merror[0m] [0m[0mone error found[0m
