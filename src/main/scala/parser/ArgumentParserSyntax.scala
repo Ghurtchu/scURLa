@@ -1,7 +1,7 @@
 package parser
 
 import entity.regex.HttpRegex
-import entity.HttpMethod
+import entity.{ContentType, HttpMethod}
 import entity.regex.HttpRegexInstances._
 import entity.regex.util.Matcher
 
@@ -10,11 +10,7 @@ object ArgumentParserSyntax {
   implicit class StringParserOps(arg: String) {
     def toHttpMethod: Option[HttpMethod] = HttpMethod(arg)
 
-    def toContentType: Option[String] = arg match {
-      case "json" => Some("application/json")
-      case "csv" => Some("text/csv")
-      case _ => None
-    }
+    def toContentType: Option[String] = ContentType(arg)
   }
 
   implicit class StringArrayParserOps(args: Array[String]) {
