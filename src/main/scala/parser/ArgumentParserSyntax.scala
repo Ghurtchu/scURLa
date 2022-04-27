@@ -1,16 +1,18 @@
 package parser
 
 import entity.regex.HttpRegex
-import entity.{GET, HttpMethod, POST}
+import entity.HttpMethod
 import entity.regex.HttpRegexInstances._
 import entity.regex.util.Matcher
 
 object ArgumentParserSyntax {
 
   implicit class StringParserOps(arg: String) {
-    def toHttpMethod: Option[HttpMethod] = arg match {
-      case "get" => Some(GET)
-      case "post" => Some(POST)
+    def toHttpMethod: Option[HttpMethod] = HttpMethod(arg)
+
+    def toContentType: Option[String] = arg match {
+      case "json" => Some("application/json")
+      case "csv" => Some("text/csv")
       case _ => None
     }
   }

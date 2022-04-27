@@ -7,7 +7,7 @@ import TypeAliases._
 import entity.{GET, HttpMethod, POST}
 
 
-object RestClient {
+object Scalevolvable {
 
   private val backend: SttpBackend[Identity, Any] = HttpURLConnectionBackend()
 
@@ -39,7 +39,9 @@ object RestClient {
 
     httpMethod match {
       case GET => {
-        val response = basicRequest.get(uri"$uri").send(backend)
+        val response = basicRequest
+          .get(uri"$uri")
+          .send(backend)
         println(response.body)
       }
       case POST => {
@@ -53,7 +55,15 @@ object RestClient {
           maybeHeaderAndBody match {
 
             case (Some(header), Some(data)) => {
-              val response = basicRequest.body(data.get).post(uri"$uri").send(backend)
+
+              val contentType = header.get.toContentType.fold[String]("application/json")(identity)
+
+              val response = basicRequest
+                .contentType(contentType)
+                .body(data.get)
+                .post(uri"$uri")
+                .send(backend)
+
               println(response)
             }
 
