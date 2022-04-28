@@ -4,7 +4,7 @@ import entity.regex.util.RegexMatcherInstances._
 import parser.validator.ContainerValidatorSyntax._
 import parser.validator.StringArrayValidatorInstances._
 import TypeAliases._
-import entity.{GET, HttpMethod, POST}
+import entity.{DELETE, GET, HttpMethod, POST}
 
 import java.nio.file.{Files, Path, Paths}
 
@@ -125,6 +125,10 @@ object Scalevolvable {
           println("data and header?...")
         }
 
+      }
+
+      case DELETE => {
+        println("delete...")
       }
     }
 

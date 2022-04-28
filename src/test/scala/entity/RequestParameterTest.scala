@@ -12,4 +12,12 @@ class RequestParameterTest extends org.scalatest.funsuite.AnyFunSuite {
     assert(RequestParameter("<d>").get.isInstanceOf[Data])
   }
 
+  test("supplying <i> should return Default with implicit content") {
+    assert(RequestParameter("<i>").get.isInstanceOf[Default])
+  }
+
+  test("supplying gibberish should return None with implicit content") {
+    assertResult(None)(RequestParameter("gibberish"))
+  }
+
 }
