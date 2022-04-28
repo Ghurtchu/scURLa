@@ -14,4 +14,11 @@ class HttpMethodTest extends org.scalatest.funsuite.AnyFunSuite {
     assertResult(Some(GET))(HttpMethod("get"))
   }
 
+  test("HttpMethod('put') should return Some(PUT)") {
+    assertResult(Some(PUT))(HttpMethod("put"))
+  }
+
+  test("HttpMethod('gibberish') should return None") {
+    assertResult(None)(HttpMethod("gibberish"))
+  }
 }

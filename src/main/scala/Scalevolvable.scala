@@ -4,7 +4,7 @@ import entity.regex.util.RegexMatcherInstances._
 import parser.validator.ContainerValidatorSyntax._
 import parser.validator.StringArrayValidatorInstances._
 import TypeAliases._
-import entity.{DELETE, GET, HttpMethod, POST}
+import entity.{DELETE, GET, HttpMethod, PATCH, POST, PUT}
 
 import java.nio.file.{Files, Path, Paths}
 
@@ -13,16 +13,20 @@ object Scalevolvable {
 
   private val backend: SttpBackend[Identity, Any] = HttpURLConnectionBackend()
 
+  // GET
+  // run GET https://api.publicapis.org/entries
 
-  // GENERAL EXAMPLE while being inside of sbt
-
-  // entity.GET
-  // run entity.GET https://api.publicapis.org/entries
-
-  // entity.POST
+  // POST
   // <h> = header
   // <d> = data
-  // run entity.POST https://reqres.in/api/users <h> "json" <d> '{"username": "nika"}'
+  // run POST https://reqres.in/api/users <h> "json" <d> '{\"name\":\"morpheus\",\"job\":\"leader\"}'
+  // run POST https://reqres.in/api/users <h> "csv" <d> ~/data.csv
+
+  // DELETE
+  // run DELETE https://reqres.in/api/users/{userId}
+
+  // PUT
+  // run PUT https://reqres/in/api/users/{userId} <d> '{\"name\":\"morpheus\",\"job\":\"leader\"}'
 
   val EMPTY_STRING = ""
 
@@ -42,11 +46,13 @@ object Scalevolvable {
     val hasHelpParam = args hasRequestParam "<help>"
 
     if (hasHelpParam) {
-      println("usage: GET http://somewebsite.com <i> => prints headers")
-      println("usage: GET http://somewebsite.com => prints response")
-      println("usage: POST https://reqres.in/api/users <h> json <d> \"{\\\"name\\\":\\\"morpheus\\\",\\\"job\\\":\\\"leader\\\"}\"  => posts json to the uri")
-      println("usage: POST http://somewebsite.com <h> csv <f> data.csv => posts csv to the uri")
-      println("usage: POST http://somewebsite.com ")
+      println("usage: run GET http://somewebsite.com <i> => prints headers")
+      println("usage: run GET http://somewebsite.com => prints response")
+      println("usage: run POST https://reqres.in/api/users <h> json <d> \"{\\\"name\\\":\\\"morpheus\\\",\\\"job\\\":\\\"leader\\\"}\"  => posts json to the uri")
+      println("usage: run POST http://somewebsite.com <h> csv <f> data.csv => posts csv to the uri")
+      println("usage: run DELETE https://reqres.in/api/users/{userId} <d> => deletes user by user id ")
+      println("usage: run PUT https://reqres.in/api/users/{userId} <d> '{\\\"name\\\":\\\"morpheus\\\",\\\"job\\\":\\\"leader\\\"}' => fully updates user filtered by user id")
+      println("usage: run PATCH https://reqres.in/api/users/{userId} <d> '{\\\"name\\\":\\\"morpheus\\\",\\\"job\\\":\\\"leader\\\"}' => partially updates user filtered by user id")
     }
 
     httpMethod match {
@@ -103,33 +109,42 @@ object Scalevolvable {
 
             }
 
-            case (Some(header), None) => {
-
-            }
-
-            case (None, Some(data)) => {
-
-            }
-
             case _ => {
-
+              println("both header and data are needed")
             }
 
           }
 
-        } else if (hasContentTypeParam) {
-          println("data?..")
-        } else if (hasDataParam) {
-          println("header?..")
         } else {
-          println("data and header?...")
+          println("Please provide data and header")
+          println("USAGE: POST https://reqres.in/api/users <h> json <d> \"{\\\"name\\\":\\\"morpheus\\\",\\\"job\\\":\\\"leader\\\"}\"")
         }
 
       }
 
       case DELETE => {
-        println("delete...")
+
+        val response = basicRequest
+          .delete(uri"$uri")
+          .send(backend)
+
+        println(response.body)
+
       }
+
+      case PUT => {
+
+        val data = (args extractRequestParam "<d>").fold[String]("")(_.get)
+
+        val response = basicRequest
+          .put(uri"$uri")
+          .body(data)
+          .send(backend)
+
+        println(response)
+
+      }
+
     }
 
   }
