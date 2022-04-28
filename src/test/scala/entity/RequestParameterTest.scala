@@ -12,7 +12,4 @@ class RequestParameterTest extends org.scalatest.funsuite.AnyFunSuite {
     assert(RequestParameter("<d>").get.isInstanceOf[Data])
   }
 
-  test("supplying <f> should return File with implicit content") {
-    assert(RequestParameter("<f>").get.isInstanceOf[File])
-  }
 }

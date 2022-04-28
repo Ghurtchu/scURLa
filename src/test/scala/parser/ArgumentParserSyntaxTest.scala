@@ -45,4 +45,5 @@ class ArgumentParserSyntaxTest extends org.scalatest.funsuite.AnyFunSuite {
   test("toContentType should return None if we supply nonexisting content type") {
     assertResult(None)("gibberish".toContentType)
   }
+
 }

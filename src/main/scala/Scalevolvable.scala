@@ -6,6 +6,8 @@ import parser.validator.StringArrayValidatorInstances._
 import TypeAliases._
 import entity.{GET, HttpMethod, POST}
 
+import java.nio.file.{Files, Path, Paths}
+
 
 object Scalevolvable {
 
@@ -37,34 +39,68 @@ object Scalevolvable {
         return
     }
 
+    val hasHelpParam = args hasRequestParam "<help>"
+
+    if (hasHelpParam) {
+      println("usage: GET http://somewebsite.com <i> => prints headers")
+      println("usage: GET http://somewebsite.com => prints response")
+      println("usage: POST https://reqres.in/api/users <h> json <d> \"{\\\"name\\\":\\\"morpheus\\\",\\\"job\\\":\\\"leader\\\"}\"  => posts json to the uri")
+      println("usage: POST http://somewebsite.com <h> csv <f> data.csv => posts csv to the uri")
+      println("usage: POST http://somewebsite.com ")
+    }
+
     httpMethod match {
       case GET => {
+
+        val hasDisplayHeaderOption = args hasRequestParam "<i>"
+
         val response = basicRequest
           .get(uri"$uri")
           .send(backend)
-        println(response.body)
+
+        if (hasDisplayHeaderOption) {
+          response.headers.foreach(println)
+        } else {
+          println(response.body)
+        }
+
       }
       case POST => {
-        val hasHeader = args hasRequestParam "<h>"
-        val hasData = args hasRequestParam "<d>"
+        val hasContentTypeParam = args hasRequestParam "<h>"
+        val hasDataParam = args hasRequestParam "<d>"
 
-        if (hasHeader && hasData) {
+        if (hasContentTypeParam && hasDataParam) {
 
-          val maybeHeaderAndBody: MaybeRequestParamTuple = (args extractRequestParam "<h>", args extractRequestParam "<d>")
+          val maybeHeaderAndData: MaybeRequestParamTuple = (args extractRequestParam "<h>", args extractRequestParam "<d>")
 
-          maybeHeaderAndBody match {
+          maybeHeaderAndData match {
 
             case (Some(header), Some(data)) => {
 
               val contentType = header.get.toContentType.fold[String]("application/json")(identity)
 
-              val response = basicRequest
+              val partialRequest = basicRequest
                 .contentType(contentType)
-                .body(data.get)
                 .post(uri"$uri")
-                .send(backend)
 
-              println(response)
+              contentType match {
+
+                case "application/json" => {
+                  val response = partialRequest.body(data.get).send(backend)
+                  println(response)
+                }
+
+                case "text/csv" => {
+                  val maybeData = args extractRequestParam "<d>"
+                  val filePath = maybeData.fold[String](EMPTY_STRING)(_.get)
+                  val file = Files.readAllBytes(Paths.get(filePath))
+                  val response = partialRequest.body(file).send(backend)
+                  println(response)
+                }
+
+              }
+
+
             }
 
             case (Some(header), None) => {
@@ -81,9 +117,9 @@ object Scalevolvable {
 
           }
 
-        } else if (hasHeader) {
+        } else if (hasContentTypeParam) {
           println("data?..")
-        } else if (hasData) {
+        } else if (hasDataParam) {
           println("header?..")
         } else {
           println("data and header?...")
