@@ -4,12 +4,15 @@ import entity.regex.util.RegexMatcherInstances._
 import parser.validator.ContainerValidatorSyntax._
 import parser.validator.StringArrayValidatorInstances._
 import TypeAliases._
-import entity.{DELETE, GET, HttpMethod, POST, PUT}
+import entity.{DELETE, GET, HttpMethod, POST, PUT, RequestParameter}
+import util.Killable
 
-import java.io.{File => JFile, PrintWriter}
+import java.io.{PrintWriter, File => JFile}
 import java.nio.file.{Files, Paths}
-import scala.util.Using
-
+import scala.util.{Try, Using}
+import util.KillableInstances.app
+import EitherDieOrSucceedSyntax._
+import OptionDieOrSucceedSyntax.OptionRequestParameterOps
 
 object Scalevolvable {
 
@@ -19,8 +22,6 @@ object Scalevolvable {
   // run GET https://api.publicapis.org/entries
 
   // POST
-  // <h> = header
-  // <d> = data
   // run POST https://reqres.in/api/users <h> "json" <d> '{\"name\":\"morpheus\",\"job\":\"leader\"}'
   // run POST https://reqres.in/api/users <h> "csv" <d> ~/data.csv
 
@@ -38,59 +39,30 @@ object Scalevolvable {
 
     val httpMethod: HttpMethod = args.extractHttpMethod.fold[HttpMethod](GET)(identity)
 
-    val uri: String = args.extractUri match {
-      case Right(value) => value
-      case Left(error) =>
-        println(error)
-        return
-    }
+    val uri = args.extractUri.succeedOrDie
 
-    val hasHelpParam = args hasRequestParam "<help>"
+    val hasHelpParam = args hasParam "<help>"
 
     if (hasHelpParam) {
-      println("usage: run GET http://somewebsite.com <i> => prints headers")
-      println("usage: run GET http://somewebsite.com => prints response")
-      println("usage: run POST https://reqres.in/api/users <h> json <d> \"{\\\"name\\\":\\\"morpheus\\\",\\\"job\\\":\\\"leader\\\"}\"  => posts json to the uri")
-      println("usage: run POST http://somewebsite.com <h> csv <f> data.csv => posts csv to the uri")
-      println("usage: run DELETE https://reqres.in/api/users/{userId} <d> => deletes user by user id ")
-      println("usage: run PUT https://reqres.in/api/users/{userId} <d> '{\\\"name\\\":\\\"morpheus\\\",\\\"job\\\":\\\"leader\\\"}' => fully updates user filtered by user id")
-      println("usage: run PATCH https://reqres.in/api/users/{userId} <d> '{\\\"name\\\":\\\"morpheus\\\",\\\"job\\\":\\\"leader\\\"}' => partially updates user filtered by user id")
+      printUsage()
     }
 
     httpMethod match {
-      case GET => {
-
-        val hasDisplayHeaderOption = args hasRequestParam "<i>"
-
+      case GET =>
         val response = basicRequest
           .get(uri"$uri")
           .send(backend)
 
-        if (hasDisplayHeaderOption) {
-          response.headers.foreach(println)
-        } else {
+        val hasDownloadOption = args hasParam "<o>"
 
-          val hasDownloadOption = args hasRequestParam "<o>"
-
-          if (hasDownloadOption) {
-
-            response.body match {
-              case Right(data) => {
-                val userHomeDir = System.getProperty("user.home")
-                val downloadFilePath = (args extractRequestParam "<o>").fold(s"$userHomeDir/data.txt")(_.get)
-                Using(new PrintWriter(new JFile(downloadFilePath)))(_ write data)
-              }
-              case Left(error) => println(error)
-            }
-          }
-
-          println(response.body)
+        if (hasDownloadOption) {
+          response.body saveAsFileOrDie args
         }
 
-      }
       case POST => {
-        val hasContentTypeParam = args hasRequestParam "<h>"
-        val hasDataParam = args hasRequestParam "<d>"
+
+        val hasContentTypeParam = args hasParam "<h>"
+        val hasDataParam = args hasParam "<d>"
 
         if (hasContentTypeParam && hasDataParam) {
 
@@ -100,7 +72,7 @@ object Scalevolvable {
 
             case (Some(header), Some(data)) => {
 
-              val contentType = header.get.toContentType.fold[String]("application/json")(identity)
+              val contentType = header.value.toContentType.getOrElse("application/json")
 
               val partialRequest = basicRequest
                 .contentType(contentType)
@@ -109,13 +81,13 @@ object Scalevolvable {
               contentType match {
 
                 case "application/json" => {
-                  val response = partialRequest.body(data.get).send(backend)
+                  val response = partialRequest.body(data.value).send(backend)
                   println(response)
                 }
 
                 case "text/csv" => {
-                  val maybeData = args extractRequestParam "<d>"
-                  val filePath = maybeData.fold[String](EMPTY_STRING)(_.get)
+                  val maybeFilePath = args extractRequestParam "<d>"
+                  val filePath = maybeFilePath.extractOrDie
                   val file = Files.readAllBytes(Paths.get(filePath))
                   val response = partialRequest.body(file).send(backend)
                   println(response)
@@ -151,7 +123,9 @@ object Scalevolvable {
 
       case PUT => {
 
-        val data = (args extractRequestParam "<d>").fold[String]("")(_.get)
+        val maybeData = args extractRequestParam "<d>"
+
+        val data = maybeData.extractOrDie
 
         val response = basicRequest
           .put(uri"$uri")
@@ -166,5 +140,43 @@ object Scalevolvable {
 
   }
 
+  private def printUsage() = {
+    println("usage: run GET http://somewebsite.com <i> => prints headers")
+    println("usage: run GET http://somewebsite.com => prints response")
+    println("usage: run POST https://reqres.in/api/users <h> json <d> \"{\\\"name\\\":\\\"morpheus\\\",\\\"job\\\":\\\"leader\\\"}\"  => posts json to the uri")
+    println("usage: run POST http://somewebsite.com <h> csv <f> data.csv => posts csv to the uri")
+    println("usage: run DELETE https://reqres.in/api/users/{userId} <d> => deletes user by user id ")
+    println("usage: run PUT https://reqres.in/api/users/{userId} <d> '{\\\"name\\\":\\\"morpheus\\\",\\\"job\\\":\\\"leader\\\"}' => fully updates user filtered by user id")
+    println("usage: run PATCH https://reqres.in/api/users/{userId} <d> '{\\\"name\\\":\\\"morpheus\\\",\\\"job\\\":\\\"leader\\\"}' => partially updates user filtered by user id")
+  }
 }
+
+object FileOps {
+  def saveFile(args: Array[String], data: String): Try[Unit] = {
+    val userHomeDir = System.getProperty("user.home")
+    val maybeFilePath = args extractRequestParam "<o>"
+    val filePath = maybeFilePath.fold(s"$userHomeDir/data.txt")(_.value)
+    println(data)
+    Using(new PrintWriter(new JFile(filePath)))(_ write data)
+  }
+}
+
+object EitherDieOrSucceedSyntax {
+
+  implicit class KillAppOps(eiss: Either[String, String]) {
+    def succeedOrDie(implicit app: Killable[String]): Unit = eiss.fold(app.die, identity)
+
+    def saveAsFileOrDie(args: Array[String])(implicit app: Killable[String]): Unit = eiss.fold(app.die, data => FileOps.saveFile(args, data))
+  }
+
+}
+
+object OptionDieOrSucceedSyntax {
+
+  implicit class OptionRequestParameterOps(maybeReqParam: Option[RequestParameter]) {
+    def extractOrDie(implicit killable: Killable[String]): String = maybeReqParam.fold("")(_.value)
+  }
+
+}
+
 

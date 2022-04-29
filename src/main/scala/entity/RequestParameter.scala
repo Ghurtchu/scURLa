@@ -1,15 +1,15 @@
 package entity
 
 trait HttpArgument {
-  def get: String
+  def value: String
 }
 
 sealed trait RequestParameter extends HttpArgument
 
-case class Header private()(implicit val get: String) extends RequestParameter
-case class Data private()(implicit val get: String) extends RequestParameter
-case class File private()(implicit val get: String) extends RequestParameter
-case class Default private()(implicit val get: String) extends RequestParameter
+case class Header private()(implicit val value: String) extends RequestParameter
+case class Data private()(implicit val value: String) extends RequestParameter
+case class File private()(implicit val value: String) extends RequestParameter
+case class Default private()(implicit val value: String) extends RequestParameter
 
 object RequestParameter {
 

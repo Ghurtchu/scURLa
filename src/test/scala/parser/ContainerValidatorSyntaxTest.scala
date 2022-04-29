@@ -12,19 +12,19 @@ class ContainerValidatorSyntaxTest extends org.scalatest.funsuite.AnyFunSuite {
 
 
   test("Command line arguments include <h> request parameter") {
-    assert(argsWithHeaderAndDataParams hasRequestParam "<h>")
+    assert(argsWithHeaderAndDataParams hasParam "<h>")
   }
 
   test("Command line arguments include <d> request parameter") {
-    assert(argsWithHeaderAndDataParams hasRequestParam "<h>")
+    assert(argsWithHeaderAndDataParams hasParam "<h>")
   }
 
   test("Command line arguments should not include <d> request parameter") {
-    assert(!(argsWithHeaderParam hasRequestParam "<d>"))
+    assert(!(argsWithHeaderParam hasParam "<d>"))
   }
 
   test("Command line arguments should not include <h> request parameter") {
-    assert(!(argsWithDataParam hasRequestParam "<h>"))
+    assert(!(argsWithDataParam hasParam "<h>"))
   }
 
   test("extractRequestParam <h> should return the Some(Header('application/json')) if the arg is json") {

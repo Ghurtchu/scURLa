@@ -6,7 +6,7 @@ object ContainerValidatorSyntax {
 
   implicit class ArrayValidatorOps(elems: Array[String]) {
 
-    def hasRequestParam(param: String)(implicit validator: ContainerValidator[String]): Boolean = validator.contains(elems, param)
+    def hasParam(param: String)(implicit validator: ContainerValidator[String]): Boolean = validator.contains(elems, param)
 
     def extractRequestParam(param: String): Option[RequestParameter] = {
       val paramIndex: Int = elems indexOf param
