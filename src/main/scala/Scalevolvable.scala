@@ -48,10 +48,13 @@ object Scalevolvable {
     }
 
     httpMethod match {
+
       case GET =>
         val response = basicRequest
           .get(uri"$uri")
           .send(backend)
+
+        println(response)
 
         val hasDownloadOption = args hasParam "<o>"
 
@@ -87,7 +90,7 @@ object Scalevolvable {
 
                 case "text/csv" => {
                   val maybeFilePath = args extractRequestParam "<d>"
-                  val filePath = maybeFilePath.extractOrDie
+                  val filePath = maybeFilePath.extractOrDie.toString
                   val file = Files.readAllBytes(Paths.get(filePath))
                   val response = partialRequest.body(file).send(backend)
                   println(response)
@@ -125,7 +128,7 @@ object Scalevolvable {
 
         val maybeData = args extractRequestParam "<d>"
 
-        val data = maybeData.extractOrDie
+        val data = maybeData.extractOrDie.toString
 
         val response = basicRequest
           .put(uri"$uri")
@@ -164,7 +167,7 @@ object FileOps {
 object EitherDieOrSucceedSyntax {
 
   implicit class KillAppOps(eiss: Either[String, String]) {
-    def succeedOrDie(implicit app: Killable[String]): Unit = eiss.fold(app.die, identity)
+    def succeedOrDie(implicit app: Killable[String]): Any = eiss.fold(app.die, identity)
 
     def saveAsFileOrDie(args: Array[String])(implicit app: Killable[String]): Unit = eiss.fold(app.die, data => FileOps.saveFile(args, data))
   }
@@ -174,7 +177,7 @@ object EitherDieOrSucceedSyntax {
 object OptionDieOrSucceedSyntax {
 
   implicit class OptionRequestParameterOps(maybeReqParam: Option[RequestParameter]) {
-    def extractOrDie(implicit killable: Killable[String]): String = maybeReqParam.fold("")(_.value)
+    def extractOrDie(implicit killable: Killable[String]): Any = maybeReqParam.fold("")(_.value)
   }
 
 }
