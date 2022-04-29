@@ -10,13 +10,15 @@ object ContainerValidatorSyntax {
 
     def extractRequestParam(param: String): Option[RequestParameter] = {
       val paramIndex: Int = elems indexOf param
-      if (paramIndex == -1) None
+      if (paramNotFound(paramIndex)) None
       else {
         implicit val content: String = elems(paramIndex + 1)
 
         RequestParameter(param)
       }
     }
+
+    private def paramNotFound(paramIndex: Int): Boolean = paramIndex == -1 || paramIndex >= elems.length - 1
 
   }
 }

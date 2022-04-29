@@ -4,9 +4,11 @@ import entity.regex.util.RegexMatcherInstances._
 import parser.validator.ContainerValidatorSyntax._
 import parser.validator.StringArrayValidatorInstances._
 import TypeAliases._
-import entity.{DELETE, GET, HttpMethod, PATCH, POST, PUT}
+import entity.{DELETE, GET, HttpMethod, POST, PUT}
 
-import java.nio.file.{Files, Path, Paths}
+import java.io.{File => JFile, PrintWriter}
+import java.nio.file.{Files, Paths}
+import scala.util.Using
 
 
 object Scalevolvable {
@@ -67,6 +69,21 @@ object Scalevolvable {
         if (hasDisplayHeaderOption) {
           response.headers.foreach(println)
         } else {
+
+          val hasDownloadOption = args hasRequestParam "<o>"
+
+          if (hasDownloadOption) {
+
+            response.body match {
+              case Right(data) => {
+                val userHomeDir = System.getProperty("user.home")
+                val downloadFilePath = (args extractRequestParam "<o>").fold(s"$userHomeDir/data.txt")(_.get)
+                Using(new PrintWriter(new JFile(downloadFilePath)))(_ write data)
+              }
+              case Left(error) => println(error)
+            }
+          }
+
           println(response.body)
         }
 
