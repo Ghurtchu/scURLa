@@ -44,6 +44,7 @@ object Scalevolvable {
         val response = basicRequest.get(uri"$uri").send(backend)
         println(response)
         val hasDownloadOption = args hasParam "<o>"
+
         if (hasDownloadOption) response.body.saveAsFileOrTerminate
 
       case POST =>
@@ -58,6 +59,7 @@ object Scalevolvable {
           maybeHeaderAndData match {
 
             case (Some(header), Some(data)) =>
+
               val contentType = header.value.toContentType.getOrElse("application/json")
               val partialRequest = basicRequest.contentType(contentType).post(uri"$uri")
 
@@ -105,7 +107,6 @@ object Scalevolvable {
     println("usage: run POST http://somewebsite.com <h> csv <f> data.csv => posts csv to the uri")
     println("usage: run DELETE https://reqres.in/api/users/{userId} <d> => deletes user by user id ")
     println("usage: run PUT https://reqres.in/api/users/{userId} <d> '{\\\"name\\\":\\\"morpheus\\\",\\\"job\\\":\\\"leader\\\"}' => fully updates user filtered by user id")
-    println("usage: run PATCH https://reqres.in/api/users/{userId} <d> '{\\\"name\\\":\\\"morpheus\\\",\\\"job\\\":\\\"leader\\\"}' => partially updates user filtered by user id")
   }
 }
 
