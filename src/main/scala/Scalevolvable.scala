@@ -5,7 +5,7 @@ import entity.regex.util.RegexMatcherInstances._
 import parser.validator.ContainerValidatorSyntax._
 import parser.validator.StringArrayValidatorInstances._
 import TypeAliases._
-import entity.{DELETE, GET, HttpMethod, POST, PUT, RequestParameter}
+import entity.{DELETE, GET, HttpMethod, POST, PUT}
 
 import java.nio.file.{Files, Paths}
 import util.KillableInstances.app
@@ -71,7 +71,7 @@ object Scalevolvable {
                   println(response.body)
 
                 case "text/csv" =>
-                  val maybeFilePath: Option[RequestParameter] = args extractRequestParam "<d>"
+                  val maybeFilePath: MaybeRequestParam = args extractRequestParam "<d>"
                   val filePath: String = maybeFilePath.extractOrTerminate.stringify
                   val file: Array[Byte] = Files.readAllBytes(Paths.get(filePath))
                   val response = partialRequest.body(file).send(backend)
@@ -92,7 +92,7 @@ object Scalevolvable {
 
       case PUT =>
 
-        val maybeData: Option[RequestParameter] = args extractRequestParam "<d>"
+        val maybeData: MaybeRequestParam = args extractRequestParam "<d>"
         val data: String = maybeData.extractOrTerminate.stringify
         val response = basicRequest.put(uri"$uri").body(data).send(backend)
         println(response.body)
