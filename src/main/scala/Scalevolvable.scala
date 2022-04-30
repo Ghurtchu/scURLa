@@ -5,7 +5,8 @@ import entity.regex.util.RegexMatcherInstances._
 import parser.validator.ContainerValidatorSyntax._
 import parser.validator.StringArrayValidatorInstances._
 import TypeAliases._
-import entity.{DELETE, GET, HttpMethod, POST, PUT}
+import entity.{DELETE, GET, HttpMethod, POST, PUT, RequestParameter}
+
 import java.nio.file.{Files, Paths}
 import util.KillableInstances.app
 import syntax.EitherSyntax._
@@ -33,7 +34,7 @@ object Scalevolvable {
 
     val httpMethod: HttpMethod = args.extractHttpMethod.getOrElse(GET)
     val uri = args.extractUri.succeedOrTerminate
-    val hasHelpParam = args hasParam "<help>"
+    val hasHelpParam: Boolean = args hasParam "<help>"
 
     if (hasHelpParam) printUsage()
 
@@ -42,15 +43,15 @@ object Scalevolvable {
       case GET =>
 
         val response = basicRequest.get(uri"$uri").send(backend)
-        println(response)
-        val hasDownloadOption = args hasParam "<o>"
+        println(response.body)
+        val hasDownloadOption: Boolean = args hasParam "<o>"
 
         if (hasDownloadOption) response.body.saveAsFileOrTerminate
 
       case POST =>
 
-        val hasContentTypeParam = args hasParam "<h>"
-        val hasDataParam = args hasParam "<d>"
+        val hasContentTypeParam: Boolean = args hasParam "<h>"
+        val hasDataParam: Boolean = args hasParam "<d>"
 
         if (hasContentTypeParam && hasDataParam) {
 
@@ -60,21 +61,21 @@ object Scalevolvable {
 
             case (Some(header), Some(data)) =>
 
-              val contentType = header.value.toContentType.getOrElse("application/json")
+              val contentType: String = header.value.toContentType.getOrElse("application/json")
               val partialRequest = basicRequest.contentType(contentType).post(uri"$uri")
 
               contentType match {
 
                 case "application/json" =>
                   val response = partialRequest.body(data.value).send(backend)
-                  println(response)
+                  println(response.body)
 
                 case "text/csv" =>
-                  val maybeFilePath = args extractRequestParam "<d>"
-                  val filePath = maybeFilePath.extractOrTerminate.stringify
-                  val file = Files.readAllBytes(Paths.get(filePath))
+                  val maybeFilePath: Option[RequestParameter] = args extractRequestParam "<d>"
+                  val filePath: String = maybeFilePath.extractOrTerminate.stringify
+                  val file: Array[Byte] = Files.readAllBytes(Paths.get(filePath))
                   val response = partialRequest.body(file).send(backend)
-                  println(response)
+                  println(response.body)
               }
 
             case _ => println("both header and data are needed")
@@ -91,10 +92,10 @@ object Scalevolvable {
 
       case PUT =>
 
-        val maybeData = args extractRequestParam "<d>"
-        val data = maybeData.extractOrTerminate.stringify
+        val maybeData: Option[RequestParameter] = args extractRequestParam "<d>"
+        val data: String = maybeData.extractOrTerminate.stringify
         val response = basicRequest.put(uri"$uri").body(data).send(backend)
-        println(response)
+        println(response.body)
 
     }
 

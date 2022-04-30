@@ -17,7 +17,7 @@ object ArgumentParserSyntax {
     def extractHttpMethod: Option[HttpMethod] = args(0).toLowerCase.toHttpMethod
 
     def extractUri(implicit matcher: Matcher[HttpRegex]): Either[String, String] = {
-      val uri = args(1)
+      val uri: String = args(1)
 
       if (matcher matches uri) Right(uri) else Left("Malformed URL...")
     }

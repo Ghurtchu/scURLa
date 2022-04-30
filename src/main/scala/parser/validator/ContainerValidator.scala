@@ -5,7 +5,7 @@ trait ContainerValidator[A] {
 }
 
 object StringArrayValidatorInstances {
-  implicit val stringArrayValidatorInstance: ContainerValidator[String] = (elems, elem) => elems contains elem
+  implicit val stringArrayValidatorInstance: ContainerValidator[String] = _ contains _
 }
 
 
