@@ -7,6 +7,7 @@ trait Killable[A] {
 object KillableInstances {
   implicit val app: Killable[String] = err => {
     println(err)
+
     System.exit(0)
   }
 }

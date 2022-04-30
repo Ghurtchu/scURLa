@@ -1,10 +1,8 @@
 package entity
 
-trait HttpArgument {
+sealed trait RequestParameter {
   def value: String
 }
-
-sealed trait RequestParameter extends HttpArgument
 
 case class Header private()(implicit val value: String) extends RequestParameter
 case class Data private()(implicit val value: String) extends RequestParameter
@@ -22,11 +20,3 @@ object RequestParameter {
   }
 }
 
-object ContentType {
-
-  def apply(param: String): Option[String] = param match {
-    case "json" => Some("application/json")
-    case "csv" => Some("text/csv")
-    case _ => None
-  }
-}

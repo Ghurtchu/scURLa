@@ -1,6 +1,7 @@
 package entity.regex
 
 import scala.util.matching.Regex
+import RegexInstances._
 
 case class HttpRegex()(implicit regex: Regex) {
   def matches(value: String): Boolean = regex matches value
@@ -11,7 +12,5 @@ object RegexInstances {
 }
 
 object HttpRegexInstances {
-  import RegexInstances._
-
   implicit val httpRegexPattern: HttpRegex = HttpRegex()
 }

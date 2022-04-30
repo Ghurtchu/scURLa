@@ -11,6 +11,7 @@ object FileOps {
     val maybeFilePath = args extractRequestParam "<o>"
     val filePath = maybeFilePath.fold(s"$userHomeDir/data.txt")(_.value)
     println(data)
+
     Using(new PrintWriter(new File(filePath)))(_ write data)
   }
 }
