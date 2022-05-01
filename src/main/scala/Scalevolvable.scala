@@ -33,72 +33,73 @@ object Scalevolvable {
     require(args.length >= 1, "You need at least to provide a URL")
 
     val httpMethod: HttpMethod = args.extractHttpMethod.getOrElse(GET)
-    val uri = args.extractUri.succeedOrTerminate
+    val uri = args.extractUri.succeedOrTerminate.stringify
     val hasHelpParam: Boolean = args hasParam "<help>"
 
     if (hasHelpParam) printUsage()
 
     httpMethod match {
-
-      case GET =>
-
-        val response = basicRequest.get(uri"$uri").send(backend)
-        println(response.body)
-        val hasDownloadOption: Boolean = args hasParam "<o>"
-
-        if (hasDownloadOption) response.body.saveAsFileOrTerminate
-
-      case POST =>
-
-        val hasContentTypeParam: Boolean = args hasParam "<h>"
-        val hasDataParam: Boolean = args hasParam "<d>"
-
-        if (hasContentTypeParam && hasDataParam) {
-
-          val maybeHeaderAndData: MaybeRequestParamPair = (args extractRequestParam "<h>", args extractRequestParam "<d>")
-
-          maybeHeaderAndData match {
-
-            case (Some(header), Some(data)) =>
-
-              val contentType: String = header.value.toContentType.getOrElse("application/json")
-              val partialRequest = basicRequest.contentType(contentType).post(uri"$uri")
-
-              contentType match {
-
-                case "application/json" =>
-                  val response = partialRequest.body(data.value).send(backend)
-                  println(response.body)
-
-                case "text/csv" =>
-                  val maybeFilePath: MaybeRequestParam = args extractRequestParam "<d>"
-                  val filePath: String = maybeFilePath.extractOrTerminate.stringify
-                  val file: Array[Byte] = Files.readAllBytes(Paths.get(filePath))
-                  val response = partialRequest.body(file).send(backend)
-                  println(response.body)
-              }
-
-            case _ => println("both header and data are needed")
-          }
-        } else {
-          println("Please provide data and header")
-          println("USAGE: POST https://reqres.in/api/users <h> json <d> \"{\\\"name\\\":\\\"morpheus\\\",\\\"job\\\":\\\"leader\\\"}\"")
-        }
-
-      case DELETE =>
-
-        val response = basicRequest.delete(uri"$uri").send(backend)
-        println(response.body)
-
-      case PUT =>
-
-        val maybeData: MaybeRequestParam = args extractRequestParam "<d>"
-        val data: String = maybeData.extractOrTerminate.stringify
-        val response = basicRequest.put(uri"$uri").body(data).send(backend)
-        println(response.body)
-
+      case GET => handleGetRequest(uri)
+      case POST => handlePostRequest(uri)
+      case DELETE => handleDeleteRequest(uri)
+      case PUT => handlePutRequest(uri)
     }
 
+  }
+
+  private def handlePutRequest(uri: String)(implicit args: Array[String]): Unit = {
+    val data: String = args.extractRequestParam("<d>").extractOrTerminate.stringify
+    val response = basicRequest.put(uri"$uri").body(data).send(backend)
+    println(response.body)
+  }
+
+  private def handleDeleteRequest(uri: String): Unit = {
+    val response = basicRequest.delete(uri"$uri").send(backend)
+    println(response.body)
+  }
+
+  private def handlePostRequest(uri: String)(implicit args: Array[String]): Unit = {
+    val hasContentTypeParam: Boolean = args hasParam "<h>"
+    val hasDataParam: Boolean = args hasParam "<d>"
+
+    if (hasContentTypeParam && hasDataParam) {
+
+      val maybeHeaderAndData: MaybeRequestParamPair = (args extractRequestParam "<h>", args extractRequestParam "<d>")
+
+      maybeHeaderAndData match {
+
+        case (Some(header), Some(data)) =>
+
+          val contentType: String = header.value.toContentType.getOrElse("application/json")
+          val partialRequest = basicRequest.contentType(contentType).post(uri"$uri")
+
+          contentType match {
+
+            case "application/json" =>
+              val response = partialRequest.body(data.value).send(backend)
+              println(response.body)
+
+            case "text/csv" =>
+              val filePath: String = args.extractRequestParam("<d>").extractOrTerminate.stringify
+              val file: Array[Byte] = Files.readAllBytes(Paths.get(filePath))
+              val response = partialRequest.body(file).send(backend)
+              println(response.body)
+          }
+
+        case _ => println("both header and data are needed")
+      }
+    } else {
+      println("Please provide data and header")
+      println("USAGE: POST https://reqres.in/api/users <h> json <d> \"{\\\"name\\\":\\\"morpheus\\\",\\\"job\\\":\\\"leader\\\"}\"")
+    }
+  }
+
+  private def handleGetRequest(uri: String)(implicit args: Array[String]): Unit = {
+    val response = basicRequest.get(uri"$uri").send(backend)
+    println(response.body)
+    val hasDownloadOption: Boolean = args hasParam "<o>"
+
+    if (hasDownloadOption) response.body.saveAsFileOrTerminate
   }
 
   private def printUsage(): Unit = {
