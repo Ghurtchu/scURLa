@@ -21,9 +21,9 @@ object Scalevolvable {
     require(args.length >= 1, "You need at least to provide a URL")
 
     val httpMethod: HttpMethod = args.extractHttpMethod.getOrElse(GET)
-    val uri = args.extractUri.succeedOrTerminate.stringify
-    val hasHelpParam: Boolean = args hasParam "<help>"
+    val uri: String = args.extractUri.succeedOrTerminate.stringify
 
+    val hasHelpParam: Boolean = args hasParam "<help>"
     if (hasHelpParam) printUsage()
 
     httpMethod match {
@@ -38,11 +38,13 @@ object Scalevolvable {
   private def handlePutRequest(uri: String)(implicit args: Array[String]): Unit = {
     val data: String = args.extractRequestParam("<d>").extractOrTerminate.stringify
     val response = basicRequest.put(uri"$uri").body(data).send(backend)
+
     println(response.body)
   }
 
   private def handleDeleteRequest(uri: String): Unit = {
     val response = basicRequest.delete(uri"$uri").send(backend)
+    
     println(response.body)
   }
 

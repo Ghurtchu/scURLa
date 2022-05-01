@@ -1,11 +1,11 @@
 package util
 
-trait Killable[A] {
-  def die(a: A): Unit
+trait Killable {
+  def dieWithError(error: String): Unit
 }
 
 object KillableInstances {
-  implicit val app: Killable[String] = err => {
+  implicit val app: Killable = err => {
     println(err)
 
     System.exit(0)

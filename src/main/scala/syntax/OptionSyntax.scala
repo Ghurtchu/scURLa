@@ -6,6 +6,6 @@ import util.Killable
 object OptionSyntax {
 
   implicit class OptionRequestParameterOps(maybeReqParam: Option[RequestParameter]) {
-    def extractOrTerminate(implicit killable: Killable[String]): Any = maybeReqParam.fold("")(_.value)
+    def extractOrTerminate(implicit killable: Killable): Any = maybeReqParam.fold("")(_.value)
   }
 }

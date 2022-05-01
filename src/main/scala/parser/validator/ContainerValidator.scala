@@ -1,7 +1,7 @@
 package parser.validator
 
 trait ContainerValidator[A] {
-  def contains(as: Array[A], a: A): Boolean
+  def contains(elems: Array[A], elem: A): Boolean
 }
 
 object StringArrayValidatorInstances {
