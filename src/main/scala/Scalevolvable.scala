@@ -16,20 +16,8 @@ object Scalevolvable {
 
   private val backend: SttpBackend[Identity, Any] = HttpURLConnectionBackend()
 
-  // GET
-  // run GET https://api.publicapis.org/entries
-
-  // POST
-  // run POST https://reqres.in/api/users <h> "json" <d> '{\"name\":\"morpheus\",\"job\":\"leader\"}'
-  // run POST https://reqres.in/api/users <h> "csv" <d> ~/data.csv
-
-  // DELETE
-  // run DELETE https://reqres.in/api/users/{userId}
-
-  // PUT
-  // run PUT https://reqres/in/api/users/{userId} <d> '{\"name\":\"morpheus\",\"job\":\"leader\"}'
-
   def main(implicit args: Array[String]): Unit = {
+
     require(args.length >= 1, "You need at least to provide a URL")
 
     val httpMethod: HttpMethod = args.extractHttpMethod.getOrElse(GET)
