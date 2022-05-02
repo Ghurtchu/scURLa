@@ -6,7 +6,7 @@ Basic setup:
 1) Clone the repository.
 2) cd into ~/Scalevolvable.
 3) run `sbt` in order to start sbt server.
-4) (Optional) run `sbt test` to make sure that all unit tests pass.
+4) (Optional) run `test` to make sure that all unit tests pass.
 5) stay in the running `sbt` mode in order to make requests.
 
 Below are the usage examples provided as commands which must be executed inside of the sbt shell:
