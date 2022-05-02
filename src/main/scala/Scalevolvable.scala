@@ -1,104 +1,102 @@
-import syntax.AnySyntax.AnyToStringOps
-import sttp.client3.{HttpURLConnectionBackend, Identity, SttpBackend, UriContext, basicRequest}
-import parser.ArgumentParserSyntax._
+import util.TypeAliases._
 import entity.regex.util.RegexMatcherInstances._
+import entity._
+import io.IO
+import io.WriterSyntax._
+import parser.ArgumentParserSyntax._
 import parser.validator.ContainerValidatorSyntax._
 import parser.validator.StringArrayValidatorInstances._
-import TypeAliases._
-import entity.{DELETE, GET, HttpMethod, POST, PUT}
+import sttp.client3.{HttpURLConnectionBackend, Identity, Response, SttpBackend, UriContext, basicRequest}
+import util.FileOps
+import io.WriterInstances.writer
 
 import java.nio.file.{Files, Paths}
-import util.KillableInstances.app
-import syntax.EitherSyntax._
-import syntax.OptionSyntax.OptionRequestParameterOps
 
 object Scalevolvable {
 
   private val backend: SttpBackend[Identity, Any] = HttpURLConnectionBackend()
 
-  def main(implicit args: Array[String]): Unit = {
+  def main(args: Array[String]): Unit = appWith(args).unsafeRun()
 
-    require(args.length >= 1, "You need at least to provide a URL")
+  private def appWith(args: Array[String]): IO[Unit] = {
+    IO(require(args.length >= 1, "You need at least to provide a URL")).onError(err => writer write err.getMessage)
+    if (args hasParam "<help>") provideHelp() else processRequestByArgs(args)
+  }
 
-    val httpMethod: HttpMethod = args.extractHttpMethod.getOrElse(GET)
-    val uri: String = args.extractUri.succeedOrTerminate.stringify
+  private def processRequestByArgs(implicit args: Array[String]): IO[Unit] = {
+    val httpMethod: HttpMethod = args.extractHttpMethod.fold[HttpMethod](GET)(identity)
+    val uriEither: Either[String, String] = args.extractUri
+    sendRequest(httpMethod, uriEither)
+  }
 
-    val hasHelpParam: Boolean = args hasParam "<help>"
-    if (hasHelpParam) printUsage()
-
-    httpMethod match {
-      case GET => handleGetRequest(uri)
-      case POST => handlePostRequest(uri)
-      case DELETE => handleDeleteRequest(uri)
-      case PUT => handlePutRequest(uri)
+  private def sendRequest(httpMethod: HttpMethod, uriEither: Either[String, String])(implicit args: Array[String]): IO[Unit] = {
+    uriEither match {
+      case Right(uri) => httpMethod match {
+        case GET => handleGetRequest(uri)
+        case POST => handlePostRequest(uri)
+        case DELETE => handleDeleteRequest(uri)
+        case PUT => handlePutRequest(uri)
+      }
+      case _ => show("Malformed URL...")
     }
-
   }
 
-  private def handlePutRequest(uri: String)(implicit args: Array[String]): Unit = {
-    val data: String = args.extractRequestParam("<d>").extractOrTerminate.stringify
-    val response = basicRequest.put(uri"$uri").body(data).send(backend)
+  private def handlePutRequest(uri: String)(implicit args: Array[String]): IO[Unit] =
+    IO(args.extractRequestParam("<d>").getOrElse(Default()("{}")).value)
+      .flatMap(data => IO(basicRequest.put(uri"$uri").body(data).send(backend)))
+      .map(response => response.body.map(show))
 
-    println(response.body)
-  }
+  private def handleDeleteRequest(uri: String): IO[Unit] =
+    IO(basicRequest.delete(uri"$uri").send(backend)).map(resp => resp.body.map(show))
 
-  private def handleDeleteRequest(uri: String): Unit = {
-    val response = basicRequest.delete(uri"$uri").send(backend)
-    
-    println(response.body)
-  }
-
-  private def handlePostRequest(uri: String)(implicit args: Array[String]): Unit = {
+  private def handlePostRequest(uri: String)(implicit args: Array[String]): IO[Unit] = {
     val hasContentTypeParam: Boolean = args hasParam "<h>"
     val hasDataParam: Boolean = args hasParam "<d>"
 
     if (hasContentTypeParam && hasDataParam) {
-
       val maybeHeaderAndData: MaybeRequestParamPair = (args extractRequestParam "<h>", args extractRequestParam "<d>")
-
       maybeHeaderAndData match {
-
         case (Some(header), Some(data)) =>
-
           val contentType: String = header.value.toContentType.getOrElse("application/json")
           val partialRequest = basicRequest.contentType(contentType).post(uri"$uri")
-
           contentType match {
-
-            case "application/json" =>
-              val response = partialRequest.body(data.value).send(backend)
-              println(response.body)
-
+            case "application/json" => IO(partialRequest.body(data.value).send(backend)).map(resp => show(resp.body))
             case "text/csv" =>
-              val filePath: String = args.extractRequestParam("<d>").extractOrTerminate.stringify
-              val file: Array[Byte] = Files.readAllBytes(Paths.get(filePath))
-              val response = partialRequest.body(file).send(backend)
-              println(response.body)
+              for {
+                filePath <- IO(args.extractRequestParam("<d>").getOrElse(Default()("d")).value)
+                file <- IO(Files.readAllBytes(Paths.get(filePath))).onError(error => show(error.getMessage))
+              } yield IO(partialRequest.body(file).send(backend)).map(resp => resp.body.map(show))
           }
 
-        case _ => println("both header and data are needed")
+        case _ => show("both header and data are needed")
       }
-    } else {
-      println("Please provide data and header")
-      println("USAGE: POST https://reqres.in/api/users <h> json <d> \"{\\\"name\\\":\\\"morpheus\\\",\\\"job\\\":\\\"leader\\\"}\"")
-    }
+    } else show("Please provide data and header")
+      .andThen(show("USAGE: POST https://reqres.in/api/users <h> json <d> \"{\\\"name\\\":\\\"morpheus\\\",\\\"job\\\":\\\"leader\\\"}\""))
   }
 
-  private def handleGetRequest(uri: String)(implicit args: Array[String]): Unit = {
-    val response = basicRequest.get(uri"$uri").send(backend)
-    println(response.body)
+  private def handleGetRequest(uri: String)(implicit args: Array[String]): IO[Unit] = {
+    implicit val ioResponseOrError: IO[Identity[Response[Either[String, String]]]] = IO(basicRequest.get(uri"$uri").send(backend))
+    val ioResponse: IO[Unit] = ioResponseOrError.flatMap(resp => show(resp.body))
     val hasDownloadOption: Boolean = args hasParam "<o>"
 
-    if (hasDownloadOption) response.body.saveAsFileOrTerminate
+    if (hasDownloadOption) saveFileOrFailWithError else ioResponse
   }
 
-  private def printUsage(): Unit = {
-    println("usage: run GET http://somewebsite.com <i> => prints headers")
-    println("usage: run GET http://somewebsite.com => prints response")
-    println("usage: run POST https://reqres.in/api/users <h> json <d> \"{\\\"name\\\":\\\"morpheus\\\",\\\"job\\\":\\\"leader\\\"}\"  => posts json to the uri")
-    println("usage: run POST http://somewebsite.com <h> csv <f> data.csv => posts csv to the uri")
-    println("usage: run DELETE https://reqres.in/api/users/{userId} <d> => deletes user by user id ")
-    println("usage: run PUT https://reqres.in/api/users/{userId} <d> '{\\\"name\\\":\\\"morpheus\\\",\\\"job\\\":\\\"leader\\\"}' => fully updates user filtered by user id")
+  private def saveFileOrFailWithError(implicit args: Array[String], ioResponseOrError: IO[Identity[Response[Either[String, String]]]]): IO[Unit] = {
+    ioResponseOrError.flatMap(resp => resp.body match {
+      case Right(value) => FileOps.saveFile(args, value)
+      case Left(error) => show(error)
+    })
+  }
+
+  private def provideHelp(): IO[Unit] = {
+    show("usage: run GET http://somewebsite.com <i> => prints headers")
+      .andThen(show("usage: run GET http://somewebsite.com <i> => prints headers"))
+      .andThen(show("usage: run GET http://somewebsite.com => prints response"))
+      .andThen(show("usage: run POST https://reqres.in/api/users <h> json <d> \"{\\\"name\\\":\\\"morpheus\\\",\\\"job\\\":\\\"leader\\\"}\"  => posts json to the uri"))
+      .andThen(show("usage: run POST http://somewebsite.com <h> csv <f> data.csv => posts csv to the uri"))
+      .andThen(show("usage: run DELETE https://reqres.in/api/users/{userId} <d> => deletes user by user id "))
+      .andThen(show("usage: run PUT https://reqres.in/api/users/{userId} <d> '{\\\"name\\\":\\\"morpheus\\\",\\\"job\\\":\\\"leader\\\"}' => fully updates user filtered by user id"))
   }
 }
 

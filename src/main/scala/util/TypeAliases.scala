@@ -1,3 +1,5 @@
+package util
+
 import entity.RequestParameter
 
 object TypeAliases {
