@@ -24,12 +24,14 @@ object Scalevolvable {
   }
 
   private def processRequestByArgs(implicit args: Array[String]): IO[Unit] = {
-    val httpMethod: HttpMethod = args.extractHttpMethod.fold[HttpMethod](GET)(identity)
+    val httpMethod: HttpMethod = args.extractHttpMethod
+      .fold[HttpMethod](GET)(identity)
     val uriEither: Either[String, String] = args.extractUri
-    sendRequest(httpMethod, uriEither)
+
+    processAndThenSendRequest(httpMethod, uriEither)
   }
 
-  private def sendRequest(httpMethod: HttpMethod, uriEither: Either[String, String])(implicit args: Array[String]): IO[Unit] = {
+  private def processAndThenSendRequest(httpMethod: HttpMethod, uriEither: Either[String, String])(implicit args: Array[String]): IO[Unit] = {
     uriEither match {
       case Right(uri) => httpMethod match {
         case GET => handleGetRequest(uri)
@@ -42,34 +44,34 @@ object Scalevolvable {
   }
 
   private def handlePutRequest(uri: String)(implicit args: Array[String]): IO[Unit] = {
-    IO(args.extractRequestParam("<d>").getOrElse(Default()("{}")).value)
-      .flatMap(data => IO(basicRequest.put(uri"$uri").body(data).send(backend)))
-      .map(response => response.body.map(show))
+    val maybeParameter: Option[RequestParameter] = args.extractRequestParam("<d>")
+    maybeParameter match {
+      case Some(param) =>
+        for (resp <- IO(basicRequest.put(uri"$uri").body(param.value).send(backend)))
+          yield resp.body.map(show)
+      case _ => show("you must provide data in order to make put request")
+    }
   }
 
   private def handleDeleteRequest(uri: String): IO[Unit] =
     IO(basicRequest.delete(uri"$uri").send(backend)).map(resp => resp.body.map(show))
 
   private def handlePostRequest(uri: String)(implicit args: Array[String]): IO[Unit] = {
-    val hasContentTypeParam: Boolean = args hasParam "<h>"
-    val hasDataParam: Boolean = args hasParam "<d>"
-    if (hasContentTypeParam && hasDataParam) {
-      val maybeHeaderAndData: MaybeRequestParamPair = (args extractRequestParam "<h>", args extractRequestParam "<d>")
-      maybeHeaderAndData match {
-        case (Some(header), Some(data)) =>
-          val contentType: String = header.value.toContentType.getOrElse("application/json")
-          val partialRequest = basicRequest.contentType(contentType).post(uri"$uri")
-          contentType match {
-            case "application/json" => IO(partialRequest.body(data.value).send(backend)).map(resp => resp.body.map(show))
-            case "text/csv" =>
-              for (file <- IO(Files.readAllBytes(Paths.get(data.value))).onError(error => show(error.getMessage)))
-                yield IO(partialRequest.body(file).send(backend)).map(resp => resp.body.map(show))
-          }
-        case _ => show("both header and data are needed")
-      }
-    } else show("Please provide data and header")
-      .andThen(show("USAGE: POST https://reqres.in/api/users <h> json <d> \"{\\\"name\\\":\\\"morpheus\\\",\\\"job\\\":\\\"leader\\\"}\""))
+    val maybeHeaderAndData: MaybeRequestParamPair = (args extractRequestParam "<h>", args extractRequestParam "<d>")
+    maybeHeaderAndData match {
+      case (Some(header), Some(data)) =>
+        val contentType: String = header.value.toContentType.getOrElse("application/json")
+        val partialRequest = basicRequest.contentType(contentType).post(uri"$uri")
+        contentType match {
+          case "application/json" => IO(partialRequest.body(data.value).send(backend)).map(resp => resp.body.map(show))
+          case "text/csv" =>
+            for (file <- IO(Files.readAllBytes(Paths.get(data.value))).onError(error => show(error.getMessage)))
+              yield IO(partialRequest.body(file).send(backend)).map(resp => resp.body.map(show))
+        }
+      case _ => show("both header and data are needed")
+    }
   }
+
 
   private def handleGetRequest(uri: String)(implicit args: Array[String]): IO[Unit] = {
     implicit val ioResponseOrError: IO[Identity[Response[Either[String, String]]]] = IO(basicRequest.get(uri"$uri").send(backend))
