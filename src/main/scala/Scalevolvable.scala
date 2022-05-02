@@ -60,7 +60,7 @@ object Scalevolvable {
           val contentType: String = header.value.toContentType.getOrElse("application/json")
           val partialRequest = basicRequest.contentType(contentType).post(uri"$uri")
           contentType match {
-            case "application/json" => IO(partialRequest.body(data.value).send(backend)).map(resp => show(resp.body))
+            case "application/json" => IO(partialRequest.body(data.value).send(backend)).map(resp => resp.body.map(show))
             case "text/csv" =>
               for {
                 filePath <- IO(args.extractRequestParam("<d>").getOrElse(Default()("d")).value)
