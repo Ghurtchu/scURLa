@@ -41,10 +41,11 @@ object Scalevolvable {
     }
   }
 
-  private def handlePutRequest(uri: String)(implicit args: Array[String]): IO[Unit] =
+  private def handlePutRequest(uri: String)(implicit args: Array[String]): IO[Unit] = {
     IO(args.extractRequestParam("<d>").getOrElse(Default()("{}")).value)
       .flatMap(data => IO(basicRequest.put(uri"$uri").body(data).send(backend)))
       .map(response => response.body.map(show))
+  }
 
   private def handleDeleteRequest(uri: String): IO[Unit] =
     IO(basicRequest.delete(uri"$uri").send(backend)).map(resp => resp.body.map(show))
@@ -56,16 +57,30 @@ object Scalevolvable {
     if (hasContentTypeParam && hasDataParam) {
       val maybeHeaderAndData: MaybeRequestParamPair = (args extractRequestParam "<h>", args extractRequestParam "<d>")
       maybeHeaderAndData match {
+
         case (Some(header), Some(data)) =>
           val contentType: String = header.value.toContentType.getOrElse("application/json")
           val partialRequest = basicRequest.contentType(contentType).post(uri"$uri")
           contentType match {
-            case "application/json" => IO(partialRequest.body(data.value).send(backend)).map(resp => resp.body.map(show))
+
+            case "application/json" =>
+              val maybeParameter = args.extractRequestParam("<d>")
+              maybeParameter match {
+
+                case Some(param) =>
+                  for (file <- IO(Files.readAllBytes(Paths.get(param.value))).onError(error => show(error.getMessage)))
+                  yield IO(partialRequest.body(file).send(backend)).map(resp => resp.body.map(show))
+
+                case _ => show("Ambiguous request parameter...")
+              }
+
             case "text/csv" =>
+
               for {
                 filePath <- IO(args.extractRequestParam("<d>").getOrElse(Default()("d")).value)
                 file <- IO(Files.readAllBytes(Paths.get(filePath))).onError(error => show(error.getMessage))
               } yield IO(partialRequest.body(file).send(backend)).map(resp => resp.body.map(show))
+
           }
 
         case _ => show("both header and data are needed")
