@@ -53,36 +53,18 @@ object Scalevolvable {
   private def handlePostRequest(uri: String)(implicit args: Array[String]): IO[Unit] = {
     val hasContentTypeParam: Boolean = args hasParam "<h>"
     val hasDataParam: Boolean = args hasParam "<d>"
-
     if (hasContentTypeParam && hasDataParam) {
       val maybeHeaderAndData: MaybeRequestParamPair = (args extractRequestParam "<h>", args extractRequestParam "<d>")
       maybeHeaderAndData match {
-
         case (Some(header), Some(data)) =>
           val contentType: String = header.value.toContentType.getOrElse("application/json")
           val partialRequest = basicRequest.contentType(contentType).post(uri"$uri")
           contentType match {
-
-            case "application/json" =>
-              val maybeParameter = args.extractRequestParam("<d>")
-              maybeParameter match {
-
-                case Some(param) =>
-                  for (file <- IO(Files.readAllBytes(Paths.get(param.value))).onError(error => show(error.getMessage)))
-                  yield IO(partialRequest.body(file).send(backend)).map(resp => resp.body.map(show))
-
-                case _ => show("Ambiguous request parameter...")
-              }
-
+            case "application/json" => IO(partialRequest.body(data.value).send(backend)).map(resp => resp.body.map(show))
             case "text/csv" =>
-
-              for {
-                filePath <- IO(args.extractRequestParam("<d>").getOrElse(Default()("d")).value)
-                file <- IO(Files.readAllBytes(Paths.get(filePath))).onError(error => show(error.getMessage))
-              } yield IO(partialRequest.body(file).send(backend)).map(resp => resp.body.map(show))
-
+              for (file <- IO(Files.readAllBytes(Paths.get(data.value))).onError(error => show(error.getMessage)))
+                yield IO(partialRequest.body(file).send(backend)).map(resp => resp.body.map(show))
           }
-
         case _ => show("both header and data are needed")
       }
     } else show("Please provide data and header")
