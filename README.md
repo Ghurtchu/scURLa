@@ -9,7 +9,7 @@ Basic setup:
 4) (Optional) run `sbt test` to make sure that all unit tests pass.
 5) stay in the running `sbt` mode in order to make requests.
 
-Below are the usage examples are provided as commands:
+Below are the usage examples provided as commands which must be executed inside of the sbt shell:
 
 GET request
 ----------------------------
