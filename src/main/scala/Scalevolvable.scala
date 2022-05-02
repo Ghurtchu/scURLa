@@ -19,19 +19,17 @@ object Scalevolvable {
   def main(args: Array[String]): Unit = appWith(args).unsafeRun()
 
   private def appWith(args: Array[String]): IO[Unit] = {
-    IO(require(args.length >= 1, "You need at least to provide a URL")).onError(err => writer write err.getMessage)
-    if (args hasParam "<help>") provideHelp() else processRequestByArgs(args)
+    IO(require(args.length >= 1, "You need at least to provide a URL")).onError(err => show(err.getMessage))
+    if (args hasParam "<help>") provideHelp() else processAndSendRequest(args)
   }
 
-  private def processRequestByArgs(implicit args: Array[String]): IO[Unit] = {
-    val httpMethod: HttpMethod = args.extractHttpMethod
-      .fold[HttpMethod](GET)(identity)
+  private def processAndSendRequest(implicit args: Array[String]): IO[Unit] = {
+    val httpMethod: HttpMethod = args.extractHttpMethod.fold[HttpMethod](GET)(identity)
     val uriEither: Either[String, String] = args.extractUri
-
-    processAndThenSendRequest(httpMethod, uriEither)
+    handleRequest(httpMethod, uriEither)
   }
 
-  private def processAndThenSendRequest(httpMethod: HttpMethod, uriEither: Either[String, String])(implicit args: Array[String]): IO[Unit] = {
+  private def handleRequest(httpMethod: HttpMethod, uriEither: Either[String, String])(implicit args: Array[String]): IO[Unit] = {
     uriEither match {
       case Right(uri) => httpMethod match {
         case GET => handleGetRequest(uri)
@@ -77,7 +75,6 @@ object Scalevolvable {
     implicit val ioResponseOrError: IO[Identity[Response[Either[String, String]]]] = IO(basicRequest.get(uri"$uri").send(backend))
     val ioResponse: IO[Unit] = ioResponseOrError.flatMap(resp => show(resp.body))
     val hasDownloadOption: Boolean = args hasParam "<o>"
-
     if (hasDownloadOption) saveFileOrFailWithError else ioResponse
   }
 
