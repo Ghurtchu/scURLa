@@ -1,5 +1,5 @@
 # Scalevolvable
-Scalevolvable is a cURL-like HTTP Client backed by "sttp" implemented in FP style.
+Scalevolvable is a cURL-like HTTP Client backed by "sttp". Scalevolvable is fully implemented in FP style.
 
 Basic setup:
 
