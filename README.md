@@ -19,7 +19,7 @@ GET request
 
 POST request commands
 ----------------------------
-> run POST POST https://reqres.in/api/users <h> json <d> "{\"name\":\"morpheus\",\"job\":\"leader\"}" => posts json to the server
+> run POST https://reqres.in/api/users <h> json <d> "{\"name\":\"morpheus\",\"job\":\"leader\"}" => posts json to the server
 
 > run POST http://somewebsite.com <h> csv <f> data.csv => posts csv to the server
   
