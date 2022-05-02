@@ -1,5 +1,5 @@
 # Scalevolvable
-Scalevolvable is a cURL-like HTTP Client backed by "sttp". Scalevolvable is fully implemented in FP style.
+Scalevolvable is a cURL-like HTTP Client backed by "sttp".
 
 Basic setup:
 
@@ -17,16 +17,18 @@ GET request
 
 > run GET https://reqres.in.api/users -o ${HOME_DIR}/data.json => saves the result in the data.json file, otherwise saves in ${HOME_DIR}/data.txt by default, if path is not specified.
 
-POST request commands
+POST request
 ----------------------------
 > run POST https://reqres.in/api/users <h> json <d> "{\"name\":\"morpheus\",\"job\":\"leader\"}" => posts json to the server
 
 > run POST http://somewebsite.com <h> csv <f> data.csv => posts csv to the server
   
-PUT request commands
+PUT request
 ----------------------------
 > run PUT https://reqres.in/api/users/{userId} <d> '{\"name\":\"morpheus\",\"job\":\"leader\"}' => fully updates data filtered by primary id
 
-DELETE request commands
+DELETE request
 ----------------------------
 > run DELETE https://reqres.in/api/users/{userId} <d> => deletes data filtered by primary id
+
+Enjoy!
