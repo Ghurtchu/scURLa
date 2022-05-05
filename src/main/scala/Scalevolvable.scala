@@ -21,8 +21,7 @@ object Scalevolvable {
 
   private def handleRequest(implicit args: Array[String]): IO[Unit] = {
     val httpMethod: HttpMethod = args.extractHttpMethod.fold[HttpMethod](GET)(identity)
-    val uriEither: Either[String, String] = args.extractUri
-    uriEither match {
+    args.extractUri match {
       case Right(uri) => RequestHandler(httpMethod, uri).handleRequest
       case _ => show("Malformed URL...")
     }
