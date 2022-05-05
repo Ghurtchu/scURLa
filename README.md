@@ -1,10 +1,10 @@
-# Scalevolvable
-Scalevolvable is a cURL-like HTTP Client backed by "sttp".
+# scURLa
+scURLa is a cURL-like HTTP Client backed by "sttp".
 
 Basic setup:
 
 1) Clone the repository.
-2) cd into ~/Scalevolvable.
+2) cd into ~/scURLa.
 3) run `sbt` in order to start sbt server.
 4) (Optional) run `test` to make sure that all unit tests pass.
 5) stay in the running `sbt` mode in order to make requests.
