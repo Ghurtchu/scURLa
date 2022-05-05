@@ -5,15 +5,12 @@ import io.WriterSyntax._
 import parser.ArgumentParserSyntax._
 import parser.validator.ContainerValidatorSyntax._
 import parser.validator.StringArrayValidatorInstances._
-import sttp.client3.{HttpURLConnectionBackend, Identity, SttpBackend}
 import io.WriterInstances.writer
 import request.RequestHandler
 import util.InstructionsProvider.provideInstructions
 
 
 object Scalevolvable {
-
-  implicit private val backend: SttpBackend[Identity, Any] = HttpURLConnectionBackend()
 
   def main(args: Array[String]): Unit = appWith(args).unsafeRun()
 
