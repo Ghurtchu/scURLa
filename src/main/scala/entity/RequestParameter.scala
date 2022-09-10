@@ -4,9 +4,9 @@ sealed trait RequestParameter {
   def value: String
 }
 
-case class Header private()(implicit val value: String) extends RequestParameter
-case class Data private()(implicit val value: String) extends RequestParameter
-case class File private()(implicit val value: String) extends RequestParameter
+case class Header private()(implicit val value: String)  extends RequestParameter
+case class Data private()(implicit val value: String)    extends RequestParameter
+case class File private()(implicit val value: String)    extends RequestParameter
 case class Default private()(implicit val value: String) extends RequestParameter
 
 object RequestParameter {
@@ -16,6 +16,7 @@ object RequestParameter {
     case "<d>" => Some(Data())
     case "<o>" => Some(File())
     case "<i>" => Some(Default())
-    case _ => None
+    case _     => None
   }
+
 }

@@ -76,6 +76,7 @@ object scURLa {
           case (Some(header), Some(data)) =>
             for {
               contentType <- IO(header.value.toContentType.getOrElse("application.json"))
+              _           <- IO(println(uri))
               partialReq  <- IO(basicRequest.contentType(contentType).post(uri"$uri"))
               _           <- contentType match {
                 case "application/json" => for {
