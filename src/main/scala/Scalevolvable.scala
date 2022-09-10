@@ -30,15 +30,23 @@ object Scalevolvable {
   }
 
   private def sendRequest(httpMethod: HttpMethod, uriEither: Either[String, String])(implicit args: Array[String]): IO[Unit] = {
-    uriEither match {
-      case Right(uri) => httpMethod match {
-        case GET => handleGetRequest(uri)
-        case POST => handlePostRequest(uri)
+    uriEither.fold(
+      _   => show("Malformed URL..."),
+      uri => httpMethod match {
+        case GET    => handleGetRequest(uri)
+        case POST   => handlePostRequest(uri)
         case DELETE => handleDeleteRequest(uri)
-        case PUT => handlePutRequest(uri)
+        case PUT    => handlePutRequest(uri)
       }
-      case _ => show("Malformed URL...")
-    }
+    )
+  }
+
+  private def handleGetRequest(uri: String)(implicit args: Array[String]): IO[Unit] = {
+    implicit val ioResponseOrError: IO[Identity[Response[Either[String, String]]]] = IO(basicRequest.get(uri"$uri").send(backend))
+    val ioResponse: IO[Unit] = ioResponseOrError.flatMap(resp => show(resp.body))
+    val hasDownloadOption: Boolean = args hasParam "<o>"
+
+    if (hasDownloadOption) saveFileOrFailWithError else IO.unit
   }
 
   private def handlePutRequest(uri: String)(implicit args: Array[String]): IO[Unit] =
@@ -47,7 +55,8 @@ object Scalevolvable {
       .map(response => response.body.map(show))
 
   private def handleDeleteRequest(uri: String): IO[Unit] =
-    IO(basicRequest.delete(uri"$uri").send(backend)).map(resp => resp.body.map(show))
+    IO(basicRequest.delete(uri"$uri").send(backend))
+      .map(resp => resp.body.map(show))
 
   private def handlePostRequest(uri: String)(implicit args: Array[String]): IO[Unit] = {
     val hasContentTypeParam: Boolean = args hasParam "<h>"
@@ -61,25 +70,17 @@ object Scalevolvable {
           val partialRequest = basicRequest.contentType(contentType).post(uri"$uri")
           contentType match {
             case "application/json" => IO(partialRequest.body(data.value).send(backend)).map(resp => show(resp.body))
-            case "text/csv" =>
-              for {
+            case "text/csv"         => for {
                 filePath <- IO(args.extractRequestParam("<d>").getOrElse(Default()("d")).value)
-                file <- IO(Files.readAllBytes(Paths.get(filePath))).onError(error => show(error.getMessage))
-              } yield IO(partialRequest.body(file).send(backend)).map(resp => resp.body.map(show))
+                file     <- IO(Files.readAllBytes(Paths.get(filePath))).onError(error => show(error.getMessage))
+                response <- IO(partialRequest.body(file).send(backend)).map(resp => resp.body.map(show))
+              } yield response
           }
 
         case _ => show("both header and data are needed")
       }
     } else show("Please provide data and header")
       .andThen(show("USAGE: POST https://reqres.in/api/users <h> json <d> \"{\\\"name\\\":\\\"morpheus\\\",\\\"job\\\":\\\"leader\\\"}\""))
-  }
-
-  private def handleGetRequest(uri: String)(implicit args: Array[String]): IO[Unit] = {
-    implicit val ioResponseOrError: IO[Identity[Response[Either[String, String]]]] = IO(basicRequest.get(uri"$uri").send(backend))
-    val ioResponse: IO[Unit] = ioResponseOrError.flatMap(resp => show(resp.body))
-    val hasDownloadOption: Boolean = args hasParam "<o>"
-
-    if (hasDownloadOption) saveFileOrFailWithError else ioResponse
   }
 
   private def saveFileOrFailWithError(implicit args: Array[String], ioResponseOrError: IO[Identity[Response[Either[String, String]]]]): IO[Unit] = {
@@ -89,7 +90,7 @@ object Scalevolvable {
     })
   }
 
-  private def provideHelp(): IO[Unit] = {
+  private def provideHelp(): IO[Unit] =
     show("usage: run GET http://somewebsite.com <i> => prints headers")
       .andThen(show("usage: run GET http://somewebsite.com <i> => prints headers"))
       .andThen(show("usage: run GET http://somewebsite.com => prints response"))
@@ -97,7 +98,6 @@ object Scalevolvable {
       .andThen(show("usage: run POST http://somewebsite.com <h> csv <f> data.csv => posts csv to the uri"))
       .andThen(show("usage: run DELETE https://reqres.in/api/users/{userId} <d> => deletes user by user id "))
       .andThen(show("usage: run PUT https://reqres.in/api/users/{userId} <d> '{\\\"name\\\":\\\"morpheus\\\",\\\"job\\\":\\\"leader\\\"}' => fully updates user filtered by user id"))
-  }
 }
 
 
