@@ -22,6 +22,32 @@ trait IO[+A] {
     f(a).unsafeRun()
   }
 
+  def zip[B](that: IO[B]): IO[(A, B)] = for {
+    a <- this
+    b <- that
+  } yield (a, b)
+
+  def zipWith[B, C](that: IO[B])(f: (A, B) => C): IO[C] = for {
+    a <- this
+    b <- that
+  } yield f(a, b)
+
+  def zipRight[B](that: IO[B]): IO[B] = for {
+    _ <- this
+    b <- that
+  } yield b
+
+  def zipLeft[B](that: IO[B]): IO[A] = for {
+    a <- this
+    _ <- that
+  } yield a
+
+  def tap(f: A => Any): IO[A] = IO {
+    lazy val a = this.unsafeRun()
+    f(a)
+    a
+  }
+
   def onError[B](f: Throwable => IO[B]): IO[A] = IO {
     Try(unsafeRun()) match {
       case Success(value) => value
