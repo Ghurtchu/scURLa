@@ -15,7 +15,7 @@ GET request
 ----------------------------
 > run GET https://reqres.in.api/users => returns the available users
 
-> run GET https://reqres.in.api/users -o $ {HOME_DIR} / data.json => saves the result in the data.json file, otherwise saves in ${HOME_DIR}/data.txt by default, if path is not specified.
+> run GET https://reqres.in.api/users -o $user_dir/data.json => saves the result in the data.json file, otherwise saves in ${HOME_DIR}/data.txt by default, if path is not specified.
 
 POST request
 ----------------------------
