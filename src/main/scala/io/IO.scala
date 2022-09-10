@@ -34,6 +34,15 @@ trait IO[+A] {
 }
 
 object IO {
+
   def apply[A](a: => A): IO[A] = () => a
+
   def unit: IO[Unit] = IO(())
+
+  def fail(t: Throwable): IO[Unit] = IO {
+    println(t.getMessage)
+
+    throw t
+  }
+
 }

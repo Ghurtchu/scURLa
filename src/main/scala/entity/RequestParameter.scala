@@ -19,4 +19,3 @@ object RequestParameter {
     case _ => None
   }
 }
-
