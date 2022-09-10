@@ -11,7 +11,6 @@ import sttp.client3.{Identity, Response, UriContext, basicRequest}
 import util.AppError.{ApiResponseError, MalformedUrlError}
 import util.FileOps
 import util.InstructionsProvider.provideInstructions
-import util.TypeAliases.MaybeRequestParamPair
 
 import java.nio.file.{Files, Paths}
 
@@ -27,8 +26,8 @@ object scURLa {
 
   private def handleRequest(implicit args: Array[String]): IO[Unit] = for {
     httpMethod <- IO(args.extractHttpMethod.getOrElse(GET))
-    uriEither <- IO(args.extractUri)
-    result <- uriEither.fold(
+    uriEither  <- IO(args.extractUri)
+    result     <- uriEither.fold(
       error => IO.fail(MalformedUrlError(error)),
       sendRequest(httpMethod, _)(args)
     )
@@ -36,26 +35,26 @@ object scURLa {
 
   private def sendRequest(httpMethod: HttpMethod, uri: String)(implicit args: Array[String]): IO[Unit] = {
     httpMethod match {
-      case GET => handleGetRequest(uri)
-      case POST => handlePostRequest(uri)
+      case GET    => handleGetRequest(uri)
+      case POST   => handlePostRequest(uri)
       case DELETE => handleDeleteRequest(uri)
-      case PUT => handlePutRequest(uri)
+      case PUT    => handlePutRequest(uri)
     }
   }
 
   private def handleGetRequest(uri: String)(implicit args: Array[String]): IO[Unit] = for {
     httpRes <- IO(basicRequest.get(uri"$uri").send(backend))
-    _ <- IO(httpRes.body.fold(_ => println("Could not extract body"), println))
-    _ <- if (args hasParam "<o>") {
+    _       <- IO(httpRes.body.fold(_ => println("Could not extract body"), println))
+    _       <- if (args hasParam "<o>") {
       val filePath = args.extractRequestParam("<o>").fold(System.getProperty("user.dir").concat("/data.txt"))(_.value)
       httpRes.body.fold(show, data => FileOps.saveFile(filePath, data))
     } else IO.unit
   } yield ()
 
   private def handlePutRequest(uri: String)(implicit args: Array[String]): IO[Unit] = for {
-    data <- IO(args.extractRequestParam("<d>").getOrElse(Default()("{}")).value)
+    data     <- IO(args.extractRequestParam("<d>").getOrElse(Default()("{}")).value)
     response <- IO(basicRequest.put(uri"$uri").body(data).send(backend))
-    _ <- response.body.fold(
+    _        <- response.body.fold(
       error => IO.fail(ApiResponseError(error)),
       show
     )
@@ -63,7 +62,7 @@ object scURLa {
 
   private def handleDeleteRequest(uri: String): IO[Unit] = for {
     response <- IO(basicRequest.delete(uri"$uri").send(backend))
-    _ <- response.body.fold(error => IO.fail(ApiResponseError(error)), show)
+    _        <- response.body.fold(error => IO.fail(ApiResponseError(error)), show)
   } yield ()
 
   private def handlePostRequest(uri: String)(implicit args: Array[String]): IO[Unit] = for {
